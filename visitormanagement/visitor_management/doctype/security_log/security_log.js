@@ -852,7 +852,7 @@ function get_identity_card(title, imageUrl, caption) {
 			<div style="font-size: 12px; font-weight: 700; color: #102a43; margin-bottom: 8px;">${title}</div>
 			${
 				imageUrl
-					? `<img src="${imageUrl}" alt="${title}" style="width: 100%; height: 148px; object-fit: cover; border-radius: 10px; border: 1px solid #dbe3ea; background: #f8fafc;">`
+					? `<img src="${frappe.utils.escape_html(String(imageUrl))}" alt="${title}" style="width: 100%; height: 148px; object-fit: cover; border-radius: 10px; border: 1px solid #dbe3ea; background: #f8fafc;">`
 					: `<div style="height: 148px; border-radius: 10px; border: 1px dashed #b8c4d0; background: #f8fafc; display: flex; align-items: center; justify-content: center; color: #7b8794; font-size: 12px; text-align: center; padding: 12px;">${__("No image available")}</div>`
 			}
 			<div style="margin-top: 8px; font-size: 11px; line-height: 1.4; color: #52606d;">${caption}</div>
@@ -976,23 +976,29 @@ function render_vip_queue_preview(dialog, vip_queue) {
 		return;
 	}
 
+	// Escape every dynamic value before it enters .html(). visitor_full_name,
+	// purpose_of_visit and protocol_notes are free text a visitor can set from
+	// the public portal \u2014 rendering them raw is a stored-XSS sink that would
+	// run in the privileged reviewer's session. esc() also coerces null/number.
+	const esc = (v) => frappe.utils.escape_html(v == null ? "-" : String(v));
+
 	dialog.get_field("vip_preview").$wrapper.html(`
 		<div style="border: 1px solid #dbe3ea; border-radius: 12px; padding: 14px; background: #f8fafc; margin-top: 8px;">
-			<div style="font-weight: 700; color: #102a43; margin-bottom: 10px;">${selected.visitor_full_name}</div>
+			<div style="font-weight: 700; color: #102a43; margin-bottom: 10px;">${esc(selected.visitor_full_name)}</div>
 			<div style="font-size: 12px; color: #334e68; line-height: 1.6;">
-				<div><strong>${__("Stage")}:</strong> ${selected.workflow_state || selected.status || "-"}</div>
-				<div><strong>${__("Visit Window")}:</strong> ${selected.visit_date || "-"} | ${selected.expected_checkin || "-"} - ${selected.expected_checkout || "-"}</div>
-				<div><strong>${__("Host")}:</strong> ${selected.person_to_visit || "-"}</div>
-				<div><strong>${__("Purpose")}:</strong> ${selected.purpose_of_visit || "-"}</div>
-				<div><strong>${__("Meeting Room")}:</strong> ${selected.conference_room || "-"}</div>
+				<div><strong>${__("Stage")}:</strong> ${esc(selected.workflow_state || selected.status || "-")}</div>
+				<div><strong>${__("Visit Window")}:</strong> ${esc(selected.visit_date || "-")} | ${esc(selected.expected_checkin || "-")} - ${esc(selected.expected_checkout || "-")}</div>
+				<div><strong>${__("Host")}:</strong> ${esc(selected.person_to_visit || "-")}</div>
+				<div><strong>${__("Purpose")}:</strong> ${esc(selected.purpose_of_visit || "-")}</div>
+				<div><strong>${__("Meeting Room")}:</strong> ${esc(selected.conference_room || "-")}</div>
 				<div><strong>${__("MD/CEO Notified")}:</strong> ${selected.mdceo_notified ? __("Yes") : __("No")}</div>
-				<div><strong>${__("Meal / People")}:</strong> ${selected.meal_type || "-"} / ${selected.number_of_people || "-"}</div>
+				<div><strong>${__("Meal / People")}:</strong> ${esc(selected.meal_type || "-")} / ${esc(selected.number_of_people || "-")}</div>
 				<div><strong>${__("Declared Items")}:</strong> ${
 					(selected.visitor_items && selected.visitor_items.length)
-						? selected.visitor_items.map(i => `${frappe.utils.escape_html(i.item_name || "-")}${i.quantity ? ` \u00D7${i.quantity}` : ""}`).join(", ")
+						? selected.visitor_items.map(i => `${esc(i.item_name || "-")}${i.quantity ? ` \u00D7${esc(i.quantity)}` : ""}`).join(", ")
 						: __("No items declared")
 				}</div>
-				<div><strong>${__("Protocol Notes")}:</strong> ${selected.protocol_notes || "-"}</div>
+				<div><strong>${__("Protocol Notes")}:</strong> ${esc(selected.protocol_notes || "-")}</div>
 			</div>
 		</div>
 	`);

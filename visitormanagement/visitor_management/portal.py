@@ -1,9 +1,33 @@
 import base64
 import binascii
 import json
+import os
 
 import frappe
 from frappe.utils import now_datetime
+
+# Guests may only upload genuine images / PDFs for ID proof and photo. We trust
+# neither the file extension nor the client-sent MIME type alone — the decoded
+# content must also start with a matching magic-byte signature.
+ALLOWED_UPLOAD_EXTENSIONS = {".jpg", ".jpeg", ".png", ".pdf"}
+MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 MB
+_UPLOAD_SIGNATURES = (
+	b"\xff\xd8\xff",        # JPEG
+	b"\x89PNG\r\n\x1a\n",   # PNG
+	b"%PDF-",               # PDF
+)
+
+
+def _validate_upload(filename, content):
+	ext = os.path.splitext(filename or "")[1].lower()
+	if ext not in ALLOWED_UPLOAD_EXTENSIONS:
+		frappe.throw("Only JPG, PNG or PDF files are allowed for ID proof and photo.")
+	if len(content) > MAX_UPLOAD_BYTES:
+		frappe.throw("File is too large. The maximum allowed size is 5 MB.")
+	if not any(content.startswith(sig) for sig in _UPLOAD_SIGNATURES):
+		frappe.throw(
+			"The uploaded file is not a valid JPG, PNG or PDF. Please re-upload a genuine image or PDF."
+		)
 
 from visitormanagement.visitor_management.doctype.visitor_invitation.visitor_invitation import (
 	get_valid_invitation_by_token,
@@ -49,19 +73,47 @@ def _extract_file_payload(payload, fallback_filename=None):
 
 
 def _store_file(filename, content):
+	"""Store an uploaded ID/photo as a PRIVATE File and return (file_url, file_name).
+
+	is_private=1 keeps sensitive ID documents out of the public /files directory.
+	The caller links the file to its Visitor Pass once the pass exists (see
+	_attach_file_to_pass) so that staff with read access to the pass can still
+	view it — a private *standalone* file would otherwise be visible only to its
+	owner and System Managers.
+	"""
 	if not content:
-		return None
+		return None, None
+
+	_validate_upload(filename, content)
 
 	file_doc = frappe.get_doc(
 		{
 			"doctype": "File",
 			"file_name": filename,
-			"is_private": 0,
+			"is_private": 1,
 			"content": content,
 		}
 	)
 	file_doc.insert(ignore_permissions=True)
-	return file_doc.file_url
+	return file_doc.file_url, file_doc.name
+
+
+def _attach_file_to_pass(file_name, pass_name, fieldname):
+	"""Link a stored private File to the Visitor Pass it belongs to, so the
+	framework's file-permission check grants access to anyone who can read the
+	pass (frappe/core/doctype/file/file.py:has_permission)."""
+	if not file_name:
+		return
+	frappe.db.set_value(
+		"File",
+		file_name,
+		{
+			"attached_to_doctype": "Visitor Pass",
+			"attached_to_name": pass_name,
+			"attached_to_field": fieldname,
+		},
+		update_modified=False,
+	)
 
 
 def _normalize_mobile_number(number, country_code=None):
@@ -354,15 +406,24 @@ def submit_pre_registration(payload=None):
 	existing_doc = None
 	if invitation and invitation.visitor_pass and frappe.db.exists("Visitor Pass", invitation.visitor_pass):
 		existing_doc = frappe.get_doc("Visitor Pass", invitation.visitor_pass)
+		# A guest may only re-edit their pass while it is still an unsubmitted
+		# Draft (the Save-Draft → come-back-and-Submit flow). Once staff have
+		# advanced it into any approval lane / Approved / Checked-In, the portal
+		# must not overwrite it — otherwise an unauthenticated caller could reset
+		# an in-progress or cleared pass to Draft and change the identity on it.
+		if existing_doc.docstatus != 0 or (existing_doc.workflow_state or "Draft") != "Draft":
+			frappe.throw(
+				"This visitor pass is already being processed and can no longer be "
+				"edited from the invitation link. Please contact your host."
+			)
 
-	id_proof_url = _store_file(
-		id_proof_filename,
-		id_proof_content,
-	) or (existing_doc.id_proof_scan if existing_doc else None)
-	visitor_photo_url = _store_file(
-		visitor_photo_filename,
-		visitor_photo_content,
-	) or (existing_doc.visitor_photo if existing_doc else None)
+	# Store any newly-uploaded files (validated + private) up front so their URLs
+	# are available for the mandatory id_proof_scan / visitor_photo fields at
+	# insert time. They are linked to the pass right after it is saved.
+	id_proof_url, id_proof_file = _store_file(id_proof_filename, id_proof_content)
+	id_proof_url = id_proof_url or (existing_doc.id_proof_scan if existing_doc else None)
+	visitor_photo_url, visitor_photo_file = _store_file(visitor_photo_filename, visitor_photo_content)
+	visitor_photo_url = visitor_photo_url or (existing_doc.visitor_photo if existing_doc else None)
 
 	doc_values = _build_visitor_pass_values(
 		data,
@@ -378,22 +439,22 @@ def submit_pre_registration(payload=None):
 	for item in visitor_items:
 		visitor_pass.append("visitor_items", item)
 
-	target_state = _get_portal_submission_state(visitor_pass.visitor_type, submission_action)
-
+	# Public/guest submissions always land as "Draft". The state is set in
+	# `_build_visitor_pass_values` and persisted through the normal insert/save
+	# path below, so it passes through validate(), permissions and the workflow
+	# engine. We deliberately do NOT db_set() status/workflow_state here: a raw
+	# write would bypass those checks, and a public API must never manipulate
+	# workflow state directly. Staff advance the pass from the desk UI.
 	if visitor_pass.is_new():
 		visitor_pass.insert(ignore_permissions=True, ignore_mandatory=not require_full_submission)
 	else:
 		visitor_pass.flags.ignore_mandatory = not require_full_submission
 		visitor_pass.save(ignore_permissions=True)
 
-	if visitor_pass.status != target_state or visitor_pass.workflow_state != target_state:
-		visitor_pass.db_set(
-			{
-				"status": target_state,
-				"workflow_state": target_state,
-			},
-			update_modified=False,
-		)
+	# Link the private ID/photo files to the now-saved pass so staff who can read
+	# the pass can view them, while they stay out of the public files directory.
+	_attach_file_to_pass(id_proof_file, visitor_pass.name, "id_proof_scan")
+	_attach_file_to_pass(visitor_photo_file, visitor_pass.name, "visitor_photo")
 
 	if invitation:
 		invitation_updates = {

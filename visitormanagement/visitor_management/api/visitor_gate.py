@@ -2,6 +2,23 @@ import frappe
 from frappe import _
 
 
+def _assert_gate_permission():
+    """Only staff allowed to create Security Logs (Security / System Manager)
+    may operate the gate.
+
+    These endpoints are @frappe.whitelist() (login required, NOT guest), but
+    that alone only proves the caller is authenticated — it does not enforce a
+    role. Without this check, any logged-in user (e.g. a plain Employee, who has
+    no `create` permission on Security Log) could forge entry/exit logs and
+    poison the audit trail.
+    """
+    if not frappe.has_permission("Security Log", "create"):
+        frappe.throw(
+            _("You are not permitted to record gate entry/exit. Security role required."),
+            frappe.PermissionError,
+        )
+
+
 # ─────────────────────────────────────────────────────────
 # CHECK-IN (via Security Log)
 # ─────────────────────────────────────────────────────────
@@ -9,6 +26,8 @@ from frappe import _
 def visitor_checkin(docname):
     """Create a Security Log for check-in. Gate officer must complete
     verification (photo, ID match, items) on the Security Log form."""
+
+    _assert_gate_permission()
 
     doc = frappe.get_doc("Visitor Pass", docname)
 
@@ -21,7 +40,7 @@ def visitor_checkin(docname):
     sl.visitor_pass = docname
     sl.event_type = "Check-In"
     sl.gate_name = "Main Gate"
-    sl.insert(ignore_permissions=True)
+    sl.insert()
 
     frappe.msgprint(
         _("Security Log {0} created. Complete gate verification to check in.").format(
@@ -40,6 +59,8 @@ def visitor_checkin(docname):
 def visitor_checkout(docname):
     """Create a Security Log for check-out."""
 
+    _assert_gate_permission()
+
     doc = frappe.get_doc("Visitor Pass", docname)
 
     if doc.status != "Checked-In":
@@ -49,7 +70,7 @@ def visitor_checkout(docname):
     sl.visitor_pass = docname
     sl.event_type = "Check-Out"
     sl.gate_name = "Main Gate"
-    sl.insert(ignore_permissions=True)
+    sl.insert()
 
     frappe.msgprint(
         _("Security Log {0} created for check-out.").format(
@@ -73,6 +94,8 @@ def scan_qr_checkin(qr_data):
     Example QR:
     PASS:VMS-VP-2026-00001|VISITOR:John|VISIT_DATE:2026-06-01
     """
+
+    _assert_gate_permission()
 
     if not qr_data:
         frappe.throw(_("Invalid QR Data."))

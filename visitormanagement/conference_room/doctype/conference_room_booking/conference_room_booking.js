@@ -135,18 +135,19 @@ function find_available_rooms(frm) {
 							'<table class="table table-bordered"><thead><tr>' +
 							"<th>Room</th><th>Capacity</th><th>Location</th><th>Type</th><th></th>" +
 							"</tr></thead><tbody>";
+						const esc = (v) => frappe.utils.escape_html(v == null ? "" : String(v));
 						r.message.forEach((room) => {
 							html +=
 								"<tr>" +
-								"<td>" + room.room_name + "</td>" +
-								"<td>" + room.capacity + "</td>" +
-								"<td>" + (room.location || "") + " " + (room.floor || "") + "</td>" +
-								"<td>" + (room.room_type || "") + "</td>" +
+								"<td>" + esc(room.room_name) + "</td>" +
+								"<td>" + esc(room.capacity) + "</td>" +
+								"<td>" + esc(room.location || "") + " " + esc(room.floor || "") + "</td>" +
+								"<td>" + esc(room.room_type || "") + "</td>" +
 								'<td><button class="btn btn-xs btn-primary select-room-btn" ' +
-								'data-room="' + room.name + '" ' +
-								'data-date="' + values.booking_date + '" ' +
-								'data-start="' + values.start_time + '" ' +
-								'data-end="' + values.end_time + '">Select</button></td>' +
+								'data-room="' + esc(room.name) + '" ' +
+								'data-date="' + esc(values.booking_date) + '" ' +
+								'data-start="' + esc(values.start_time) + '" ' +
+								'data-end="' + esc(values.end_time) + '">Select</button></td>' +
 								"</tr>";
 						});
 						html += "</tbody></table>";
@@ -196,6 +197,7 @@ function view_room_schedule(frm) {
 				);
 				return;
 			}
+			const esc = (v) => frappe.utils.escape_html(v == null ? "" : String(v));
 			let html =
 				'<table class="table table-bordered"><thead><tr>' +
 				"<th>Booking</th><th>Meeting</th><th>Time</th><th>Type</th><th>Status</th>" +
@@ -204,19 +206,19 @@ function view_room_schedule(frm) {
 				html +=
 					"<tr>" +
 					'<td><a href="/app/conference-room-booking/' +
-					b.name +
+					esc(b.name) +
 					'">' +
-					b.name +
+					esc(b.name) +
 					"</a></td>" +
-					"<td>" + b.meeting_title + "</td>" +
-					"<td>" + b.start_time + " - " + b.end_time + "</td>" +
-					"<td>" + b.meeting_type + "</td>" +
-					"<td>" + b.status + "</td></tr>";
+					"<td>" + esc(b.meeting_title) + "</td>" +
+					"<td>" + esc(b.start_time) + " - " + esc(b.end_time) + "</td>" +
+					"<td>" + esc(b.meeting_type) + "</td>" +
+					"<td>" + esc(b.status) + "</td></tr>";
 			});
 			html += "</tbody></table>";
 			frappe.msgprint({
 				title: __(
-					frm.doc.conference_room + " - " + frm.doc.booking_date
+					esc(frm.doc.conference_room) + " - " + esc(frm.doc.booking_date)
 				),
 				message: html,
 				wide: true,

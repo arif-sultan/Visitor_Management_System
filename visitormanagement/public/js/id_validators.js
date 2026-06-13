@@ -105,8 +105,13 @@
 
 	function validateID(idType, number) {
 		const label = canonicalType(idType);
-		if (!label) return false;
-		return VALIDATORS[label](number);
+		// `label` is already constrained to a whitelisted canonical value, but
+		// resolve+call defensively: only own enumerable validators, never an
+		// inherited member (constructor, toString, …), and only if it's callable.
+		if (!label || !Object.prototype.hasOwnProperty.call(VALIDATORS, label)) return false;
+		const validator = VALIDATORS[label];
+		if (typeof validator !== "function") return false;
+		return validator(number);
 	}
 
 	function detectIDType(number) {
@@ -134,11 +139,15 @@
 
 	function idProofErrorMessage(idType) {
 		const label = canonicalType(idType) || idType;
+		// hasOwnProperty guard so an inherited key (e.g. "constructor") can't
+		// return a prototype function instead of the proper fallback message.
+		if (Object.prototype.hasOwnProperty.call(ERROR_MESSAGES, label)) {
+			return ERROR_MESSAGES[label];
+		}
 		return (
-			ERROR_MESSAGES[label] ||
 			"Unsupported ID Proof Type: " +
-				JSON.stringify(idType) +
-				". Use Aadhaar, PAN Card, Driving License, or Passport."
+			JSON.stringify(idType) +
+			". Use Aadhaar, PAN Card, Driving License, or Passport."
 		);
 	}
 
