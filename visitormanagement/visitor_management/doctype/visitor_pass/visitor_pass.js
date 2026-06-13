@@ -533,6 +533,8 @@ function render_approver_context_card(frm) {
 	const items_declared = (frm.doc.visitor_items || []).length > 0
 		|| !!(frm.doc.items_carried || "").trim();
 
+	const esc = (v) => frappe.utils.escape_html(v == null ? "" : String(v));
+
 	const checklist_item = (label, ok) => `
 		<span style="display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600; background:${ok ? "#d9f3e4" : "#fde2e2"}; color:${ok ? "#0d6b3e" : "#9b1c1c"};">
 			${ok ? "✅" : "⚠️"} ${label}
@@ -546,9 +548,9 @@ function render_approver_context_card(frm) {
 	`;
 
 	const visit_window = [
-		frm.doc.visit_date || "",
-		frm.doc.expected_checkin || "",
-		frm.doc.expected_checkout ? "→ " + frm.doc.expected_checkout : "",
+		esc(frm.doc.visit_date || ""),
+		esc(frm.doc.expected_checkin || ""),
+		frm.doc.expected_checkout ? "→ " + esc(frm.doc.expected_checkout) : "",
 	].filter(Boolean).join(" ");
 
 	const html = `
@@ -564,12 +566,12 @@ function render_approver_context_card(frm) {
 				</div>
 			</div>
 			<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:8px;">
-				${meta_row(__("Visitor"), frm.doc.visitor_full_name)}
-				${meta_row(__("Type"), frm.doc.visitor_type)}
-				${meta_row(__("Company"), frm.doc.company__organisation)}
-				${meta_row(__("Host"), frm.doc.person_to_visit)}
+				${meta_row(__("Visitor"), esc(frm.doc.visitor_full_name))}
+				${meta_row(__("Type"), esc(frm.doc.visitor_type))}
+				${meta_row(__("Company"), esc(frm.doc.company__organisation))}
+				${meta_row(__("Host"), esc(frm.doc.person_to_visit))}
 				${meta_row(__("Visit Window"), visit_window)}
-				${meta_row(__("Purpose"), frm.doc.purpose_of_visit)}
+				${meta_row(__("Purpose"), esc(frm.doc.purpose_of_visit))}
 			</div>
 		</div>
 	`;
@@ -659,19 +661,23 @@ function show_web_submissions_dialog(frm) {
 }
 
 function generate_submissions_html(submissions, frm) {
+	// These rows come from guest-submitted Visitor Passes (visitor_full_name,
+	// mobile_number, email_id are free text). Escape every value before it enters
+	// the dialog HTML, or a crafted name/email runs script in the staff session.
+	const esc = (v) => frappe.utils.escape_html(v == null ? "" : String(v));
 	let html = '<div class="row">';
 	submissions.forEach(sub => {
 		html += `
 			<div class="col-md-6 mb-3">
 				<div class="card">
 					<div class="card-body">
-						<h5 class="card-title">${sub.visitor_full_name} (${sub.visitor_type})</h5>
+						<h5 class="card-title">${esc(sub.visitor_full_name)} (${esc(sub.visitor_type)})</h5>
 						<p class="card-text">
-							Phone: ${sub.mobile_number}<br>
-							Email: ${sub.email_id}<br>
-							Date: ${sub.visit_date}
+							Phone: ${esc(sub.mobile_number)}<br>
+							Email: ${esc(sub.email_id)}<br>
+							Date: ${esc(sub.visit_date)}
 						</p>
-						<button class="btn btn-primary btn-sm" onclick="select_submission('${sub.name}', '${frm.doc.name}')">Select & Auto-Fetch</button>
+						<button class="btn btn-primary btn-sm" onclick="select_submission('${esc(sub.name)}', '${esc(frm.doc.name)}')">Select & Auto-Fetch</button>
 					</div>
 				</div>
 			</div>
@@ -825,7 +831,7 @@ function lookup_existing_visitor_match(frm, trigger_field) {
 
 			const prompt = __(
 				"Existing {0} record found: {1} ({2}). Do you want to load this data?",
-				[best.visitor_type, best.name, best.visitor_full_name]
+				[frappe.utils.escape_html(best.visitor_type || ""), frappe.utils.escape_html(best.name || ""), frappe.utils.escape_html(best.visitor_full_name || "")]
 			);
 
 			frappe.confirm(prompt, () => {

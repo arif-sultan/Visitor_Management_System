@@ -264,18 +264,22 @@ class VisitorPass(Document):
             frappe.log_error(f"Blacklist alert email failed: {exc}", "VMS Blacklist Alert")
 
     def _security_alert_recipients(self):
-        users = frappe.get_all(
+        user_names = frappe.get_all(
             "Has Role",
             filters={"role": ["in", ["Security", "System Manager"]], "parenttype": "User"},
-            fields=["parent"],
+            pluck="parent",
             distinct=True,
         )
-        emails = []
-        for u in users:
-            email = frappe.db.get_value("User", u.parent, "email")
-            if email and email != "Administrator" and "@" in email:
-                emails.append(email)
-        return list(set(emails))
+        if not user_names:
+            return []
+        # Single bulk query for all emails instead of one get_value() per user
+        # (avoids an N+1 round-trip per security/admin user on every alert).
+        emails = frappe.get_all(
+            "User",
+            filters={"name": ["in", user_names]},
+            pluck="email",
+        )
+        return list({e for e in emails if e and e != "Administrator" and "@" in e})
 
     def _normalize_mobile_number(self):
         if not self.mobile_number:
@@ -498,13 +502,14 @@ class VisitorPass(Document):
     # PRIVATE: GENERATE QR CODE
     # ─────────────────────────────────────────────────────────
     def _generate_qr_code(self):
-        # Match keys used in visitor_gate.py (scan_qr_checkin)
+        # Match keys used in visitor_gate.py (scan_qr_checkin), which identifies
+        # the pass by PASS / VISITOR+VISIT_DATE only. We deliberately do NOT embed
+        # the ID proof number or host in the QR: the QR image is emailed and could
+        # be intercepted/leaked, and the gate re-derives those values from the DB.
         qr_data = (
             f"PASS:{self.name}"
             f"|VISITOR:{self.visitor_full_name}"
             f"|VISIT_DATE:{self.visit_date}"
-            f"|ID_NO:{self.id_proof_number}"
-            f"|HOST:{self.person_to_visit}"
         )
 
         qr_img = qrcode.make(qr_data)
@@ -526,7 +531,10 @@ class VisitorPass(Document):
             "attached_to_name": self.name,
             "attached_to_field": "qr_code_image",
             "content": qr_content,
-            "is_private": 0,
+            # Private: the QR is attached to the pass (staff with read access can
+            # still view it) but is no longer world-readable in /files. It is
+            # emailed to the visitor as an attachment, so this does not break delivery.
+            "is_private": 1,
         })
 
         file_doc.insert(ignore_permissions=True)
@@ -639,27 +647,28 @@ class VisitorPass(Document):
 def search_existing_by_phone(phone):
     if not phone:
         return []
-    visitors = frappe.db.sql("""
-        SELECT name, visitor_full_name, visitor_type
-        FROM `tabVisitor Pass`
-        WHERE mobile_number = %s
-        ORDER BY creation DESC
-        LIMIT 10
-    """, (phone,), as_dict=True)
-    return visitors
+    # frappe.get_list (unlike raw SQL / get_all) enforces the Visitor Pass
+    # row-level permission model (visitormanagement/permissions.py), so a caller
+    # can only find passes they are authorised to read — no cross-visitor PII scan.
+    return frappe.get_list(
+        "Visitor Pass",
+        filters={"mobile_number": phone},
+        fields=["name", "visitor_full_name", "visitor_type"],
+        order_by="creation desc",
+        limit=10,
+    )
 
 @frappe.whitelist()
 def search_existing_by_id(id_number):
     if not id_number:
         return []
-    visitors = frappe.db.sql("""
-        SELECT name, visitor_full_name, visitor_type
-        FROM `tabVisitor Pass`
-        WHERE id_proof_number = %s
-        ORDER BY creation DESC
-        LIMIT 10
-    """, (id_number,), as_dict=True)
-    return visitors
+    return frappe.get_list(
+        "Visitor Pass",
+        filters={"id_proof_number": id_number},
+        fields=["name", "visitor_full_name", "visitor_type"],
+        order_by="creation desc",
+        limit=10,
+    )
 
 
 def _normalized_digits(value):
@@ -675,6 +684,14 @@ def get_existing_visitor_matches(visitor_type=None, id_proof_number=None, mobile
 
     if not id_proof_number and not mobile_number:
         return {"best_match": None, "matches": []}
+
+    # Authorisation: require doctype read, then constrain rows to the caller's
+    # Visitor Pass permission scope so this cannot enumerate other visitors' PII.
+    frappe.has_permission("Visitor Pass", "read", throw=True)
+    from visitormanagement.permissions import get_visitor_pass_permission_query_conditions
+
+    _perm = get_visitor_pass_permission_query_conditions()
+    perm_filter = f" AND ({_perm})" if _perm else ""
 
     matches = []
     seen = set()
@@ -703,6 +720,7 @@ def get_existing_visitor_matches(visitor_type=None, id_proof_number=None, mobile
             """
             + type_filter
             + exclude_filter
+            + perm_filter
             + """
             ORDER BY modified DESC
             LIMIT 10
@@ -722,6 +740,7 @@ def get_existing_visitor_matches(visitor_type=None, id_proof_number=None, mobile
             """
             + type_filter
             + exclude_filter
+            + perm_filter
             + """
             ORDER BY modified DESC
             LIMIT 100
@@ -749,6 +768,7 @@ def get_existing_visitor_matches(visitor_type=None, id_proof_number=None, mobile
 @frappe.whitelist()
 @frappe.validate_and_sanitize_search_inputs
 def search_visitor_passes(doctype, txt, searchfield, start, page_len, filters):
+    frappe.has_permission("Visitor Pass", "read", throw=True)
     filters = filters or {}
     visitor_type = filters.get("visitor_type")
 
@@ -765,6 +785,12 @@ def search_visitor_passes(doctype, txt, searchfield, start, page_len, filters):
         params.extend([like] * 5)
 
     where = " AND ".join(conditions) if conditions else "1=1"
+    # Constrain rows to the caller's Visitor Pass permission scope.
+    from visitormanagement.permissions import get_visitor_pass_permission_query_conditions
+
+    _perm = get_visitor_pass_permission_query_conditions()
+    if _perm:
+        where += f" AND ({_perm})"
     # Compute the dropdown description live (visitor_full_name · mobile_number) so
     # reception can spot + search by phone, regardless of how stale the cached
     # `visitor_summary` is on legacy/demo records.
@@ -791,6 +817,17 @@ def get_existing_visitor_pass_details(visitor_pass, visitor_type=None):
         frappe.throw("Visitor Pass is required.")
 
     doc = frappe.get_doc("Visitor Pass", visitor_pass)
+    # IDOR guard: this returns ID proof number/scan + photo. Enforce the app's
+    # own row-level access model (the same model used by the search endpoints and
+    # list views) so a user cannot fetch a pass outside their scope. We use the
+    # app's hook rather than doc.check_permission() so this stays consistent with
+    # the search results and is not skewed by deployment-specific User Permissions.
+    from visitormanagement.permissions import has_visitor_pass_permission
+
+    if frappe.session.user != "Administrator" and not has_visitor_pass_permission(
+        doc, frappe.session.user, "read"
+    ):
+        raise frappe.PermissionError("You are not permitted to access this Visitor Pass.")
     if visitor_type and doc.visitor_type != visitor_type:
         frappe.throw("Selected record type does not match current Visitor Type.")
 
