@@ -122,8 +122,8 @@ function showStatusBanner(frm) {
 			">
 				<strong>${__("Sent")}</strong> &mdash;
 				${__("Invitation emailed to <b>{0}</b> on {1}. Waiting for visitor to open the link.", [
-					frm.doc.visitor_email,
-					frappe.datetime.str_to_user(frm.doc.invitation_sent_on),
+					frappe.utils.escape_html(frm.doc.visitor_email || ""),
+					frappe.utils.escape_html(frappe.datetime.str_to_user(frm.doc.invitation_sent_on) || ""),
 				])}
 			</div>
 		`;

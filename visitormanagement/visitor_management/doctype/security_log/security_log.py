@@ -464,7 +464,10 @@ class SecurityLog(Document):
 @frappe.whitelist()
 def get_approved_vip_queue(visit_date=None):
 	target_date = getdate(visit_date) if visit_date else getdate()
-	return frappe.get_all(
+	# get_list (not get_all) applies the Visitor Pass row-level permission model,
+	# so only users entitled to VIP passes (HOD/CEO, or Security for approved/
+	# checked-in passes) receive this roster — not every authenticated user.
+	return frappe.get_list(
 		"Visitor Pass",
 		filters={
 			"visitor_type": "VIP",
@@ -489,4 +492,5 @@ def get_approved_vip_queue(visit_date=None):
 			"protocol_notes",
 		],
 		order_by="expected_checkin asc, modified asc",
+		limit_page_length=0,  # return the full day's queue (get_all had no limit)
 	)
