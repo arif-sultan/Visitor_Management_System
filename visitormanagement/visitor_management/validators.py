@@ -62,6 +62,7 @@ _AADHAAR_RE = re.compile(r"^\d{12}$")
 _PAN_RE = re.compile(r"^[A-Z]{5}[0-9]{4}[A-Z]{1}$")
 _DL_RE = re.compile(r"^[A-Z]{2}[0-9]{2}\s?[0-9]{11}$")
 _PASSPORT_RE = re.compile(r"^[A-Z]{1}[0-9]{7}$")
+_EMIRATES_ID_RE = re.compile(r"^784-\d{4}-\d{7}-\d$")
 
 
 def _strip(number):
@@ -99,6 +100,10 @@ def validate_passport(number):
     clean = _strip(str(number or "")).upper()
     return bool(_PASSPORT_RE.match(clean))
 
+def validate_emirates_id(number):
+    clean = str(number or "").strip()
+    return bool(_EMIRATES_ID_RE.match(clean))
+
 
 # ─────────────────────────────────────────────────────────────
 # TYPE DISPATCH
@@ -114,6 +119,7 @@ _CANONICAL = {
     "driving license": "Driving License",
     "driving licence": "Driving License",
     "passport": "Passport",
+    "emirates id": "Emirates ID",
 }
 
 _VALIDATORS = {
@@ -121,6 +127,7 @@ _VALIDATORS = {
     "PAN Card": validate_pan,
     "Driving License": validate_driving_license,
     "Passport": validate_passport,
+    "Emirates ID": validate_emirates_id,
 }
 
 
@@ -139,9 +146,15 @@ def validate_id(id_type, number):
 
 def detect_id_type(number):
     """Return the first canonical label whose validator accepts `number`, else None.
-    Order: Aadhaar → PAN → Driving License → Passport.
+    Order: Aadhaar → PAN → Driving License → Passport → Emirates ID.
     """
-    for label in ("Aadhaar", "PAN Card", "Driving License", "Passport"):
+    for label in (
+    "Aadhaar",
+    "PAN Card",
+    "Driving License",
+    "Passport",
+    "Emirates ID",
+):
         if _VALIDATORS[label](number):
             return label
     return None
@@ -168,6 +181,9 @@ _ERROR_MESSAGES = {
         "Passport must be in the format A1234567 "
         "(1 uppercase letter followed by 7 digits)."
     ),
+    "Emirates ID": (
+    "Emirates ID must be in the format 784-XXXX-XXXXXXX-X."
+    ),
 }
 
 
@@ -176,8 +192,7 @@ def id_proof_error_message(id_type):
     return _ERROR_MESSAGES.get(
         canonical,
         f"Unsupported ID Proof Type: {id_type!r}. "
-        "Use Aadhaar, PAN Card, Driving License, or Passport.",
-    )
+        "Use Aadhaar, PAN Card, Driving License, Passport, or Emirates ID.")
 
 
 # ─────────────────────────────────────────────────────────────

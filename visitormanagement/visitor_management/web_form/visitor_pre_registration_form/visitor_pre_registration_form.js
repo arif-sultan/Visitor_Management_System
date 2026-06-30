@@ -811,7 +811,7 @@ function setupInvitationHooks() {
 			frappe.msgprint({
 				title: __("Check your mobile number"),
 				message: __(
-					"Mobile number doesn't look right. Enter 10 digits (e.g. 9876543210), or +country code + number (e.g. +91 9876543210)."
+    						"Mobile number doesn't look right. Enter a valid phone number with the appropriate country code (e.g. +971501234567)."
 				),
 				indicator: "orange",
 			});

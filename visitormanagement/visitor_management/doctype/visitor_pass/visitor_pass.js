@@ -199,15 +199,7 @@ function preview_normalised_mobile(frm) {
 		frm.refresh_field("mobile_number");
 		return;
 	}
-	const digits = raw.replace(/\D/g, "");
-	let normalised = raw;
-	if (digits.length >= 10) {
-		const last10 = digits.slice(-10);
-		normalised = `+91-${last10}`;
-	}
-	const description = (normalised !== raw)
-		? __("Will be saved as: <b>{0}</b>", [normalised])
-		: __("✓ Format looks good");
+	const description = __("✓ Mobile number will be saved as entered.");
 	frm.set_df_property("mobile_number", "description", description);
 	frm.refresh_field("mobile_number");
 }

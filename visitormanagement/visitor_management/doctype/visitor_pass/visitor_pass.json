@@ -22,6 +22,7 @@
   "mobile_number",
   "email_id",
   "company__organisation",
+  "goods_description",
   "column_break_identity_details",
   "id_proof_type",
   "id_proof_number",
@@ -141,7 +142,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Visitor Type",
-   "options": "\nContractor\nCandidate\nCustomer\nSupplier\nVIP",
+   "options": "\nContractor\nCandidate\nCustomer\nSupplier\nVIP\nParents",
    "reqd": 1
   },
   {
@@ -245,7 +246,7 @@
    "fieldname": "id_proof_type",
    "fieldtype": "Select",
    "label": "ID Proof Type",
-   "options": "Aadhaar\nPAN Card\nPassport\nDriving License",
+   "options": "Aadhaar\nPAN Card\nPassport\nDriving License\nEmirates ID",
    "reqd": 1
   },
   {
@@ -569,10 +570,10 @@
   },
   {
    "depends_on": "eval:doc.visitor_type == 'VIP'",
+   "description": "Capture welcome gift, security escort, dress code, or any special instructions here.",
    "fieldname": "protocol_notes",
    "fieldtype": "Text Editor",
-   "label": "Protocol Notes",
-   "description": "Capture welcome gift, security escort, dress code, or any special instructions here."
+   "label": "Protocol Notes"
   },
   {
    "fieldname": "last_vip_notification_stage",
@@ -719,7 +720,6 @@
   },
   {
    "allow_on_submit": 1,
-   "collapsible": 0,
    "description": "Tick any arrangements required for this visit. A Hospitality Request is created automatically once the pass is approved.",
    "fieldname": "section_break_khxo",
    "fieldtype": "Section Break",
@@ -828,8 +828,7 @@
    "read_only": 1
   },
   {
-   "collapsible": 0,
-   "description": "Cab, hotel, factory tour, buggy, or lobby greeting — tick what the visitor needs.",
+   "description": "Cab, hotel, factory tour, buggy, or lobby greeting \u2014 tick what the visitor needs.",
    "fieldname": "arrangements_section",
    "fieldtype": "Section Break",
    "label": "Additional Arrangements"
@@ -908,14 +907,19 @@
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "goods_description",
+   "fieldtype": "Small Text",
+   "label": "Goods Description"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-04-15 11:35:42.440403",
- "modified_by": "Administrator",
+ "modified": "2026-06-30 17:13:53.198357",
+ "modified_by": "arif.salam@sowaan.com",
  "module": "Visitor Management",
  "name": "Visitor Pass",
  "naming_rule": "Expression",
@@ -1003,7 +1007,6 @@
   {
    "email": 1,
    "export": 1,
-   "if_owner": 0,
    "print": 1,
    "read": 1,
    "report": 1,
@@ -1032,7 +1035,6 @@
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
  "search_fields": "visitor_full_name,mobile_number",
- "show_title_field_in_link": 0,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

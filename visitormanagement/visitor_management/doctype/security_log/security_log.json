@@ -217,7 +217,7 @@
       "fieldname": "id_proof_type_verified",
       "fieldtype": "Select",
       "label": "ID Type Presented at Gate",
-      "options": "Aadhaar\nPAN Card\nPassport\nDriving License"
+      "options": "Aadhaar\nPAN Card\nPassport\nDriving License\nEmirates ID"
     },
     {
       "description": "Last 4 digits of the ID number — for cross-reference against the document. Read-only; cannot be edited at the gate.",

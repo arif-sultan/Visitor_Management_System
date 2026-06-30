@@ -284,15 +284,8 @@ class VisitorPass(Document):
     def _normalize_mobile_number(self):
         if not self.mobile_number:
             return
-        raw = str(self.mobile_number).strip()
-        digits = "".join(c for c in raw if c.isdigit())
-        if not digits:
-            return
-        if digits.startswith("91") and len(digits) > 10:
-            digits = digits[2:]
-        # Frappe Phone widget expects "+{isd}-{number}" format (hyphen, NOT space)
-        # See apps/frappe/frappe/public/js/frappe/form/controls/phone.js:167
-        self.mobile_number = f"+91-{digits[-10:]}" if len(digits) >= 10 else raw
+
+        self.mobile_number = str(self.mobile_number).strip()
 
     def _set_visitor_summary(self):
         mobile_display = (self.mobile_number or "").replace("-", " ")

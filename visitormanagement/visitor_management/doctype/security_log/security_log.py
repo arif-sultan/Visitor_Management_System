@@ -153,7 +153,8 @@ class SecurityLog(Document):
                 self.visitor_photo = vp.visitor_photo
             if not self.id_proof_scan:
                 self.id_proof_scan = vp.id_proof_scan
-
+            if not self.id_proof_type_verified:
+                self.id_proof_type_verified = vp.id_proof_type
             # Mask ID proof number — gate security only needs last 4 digits
             if vp.id_proof_number:
                 self.id_proof_number = mask_id_number(str(vp.id_proof_number).strip())
