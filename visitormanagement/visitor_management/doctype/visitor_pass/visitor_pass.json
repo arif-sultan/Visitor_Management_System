@@ -3,6 +3,7 @@
  "allow_rename": 1,
  "autoname": "VP-.YYYY.-.#####",
  "creation": "2026-02-28 17:44:43.087151",
+ "default_print_format": "Visitor Badge",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
