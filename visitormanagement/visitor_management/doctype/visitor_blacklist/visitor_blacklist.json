@@ -24,7 +24,7 @@
    "fieldname": "id_proof_type",
    "fieldtype": "Select",
    "label": "ID Proof Type ",
-   "options": "\nAadhaar\nPAN Card\nPassport\nDriving License"
+   "options": "\nCNIC\nStudent Card\nPassport\nDriving License"
   },
   {
    "fieldname": "id_proof_number",

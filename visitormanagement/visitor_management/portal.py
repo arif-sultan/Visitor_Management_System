@@ -170,7 +170,10 @@ def _resolve_employee_link(value):
 def _normalize_id_proof_type(id_proof_type):
 	value = (id_proof_type or "").strip()
 	mapper = {
-		"PAN": "PAN Card",
+		"PAN": "Student Card",
+		"PAN Card": "Student Card",
+		"Aadhaar": "CNIC",
+		"Emirates ID": "Others",
 	}
 	return mapper.get(value, value)
 

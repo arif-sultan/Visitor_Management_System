@@ -15,7 +15,7 @@
  "docstatus": 0,
  "doctype": "Web Form",
  "idx": 0,
- "introduction_text": "<div>Welcome! Complete this short form to pre-register your visit.<br><br><b>What to keep ready:</b> a valid government ID (Aadhaar, PAN, Passport, or Driving License) and a recent photo of yourself. Your visitor type has been pre-set by your host \u2014 you don't need to change it.<br><br>Once you submit, your host will be notified for approval. You'll receive an email and can show that confirmation at the gate when you arrive.</div>",
+ "introduction_text": "<div>Welcome! Complete this short form to pre-register your visit.<br><br><b>What to keep ready:</b> a valid government ID (CNIC, Student Card, Passport, or Driving License) and a recent photo of yourself. Your visitor type has been pre-set by your host \u2014 you don't need to change it.<br><br>Once you submit, your host will be notified for approval. You'll receive an email and can show that confirmation at the gate when you arrive.</div>",
  "is_standard": 1,
  "list_columns": [],
  "login_required": 0,
@@ -266,7 +266,7 @@
    "label": "ID Proof Type",
    "max_length": 0,
    "max_value": 0,
-   "options": "Aadhaar\nPAN Card\nPassport\nDriving License\nEmirates ID",
+   "options": "CNIC\nStudent Card\nPassport\nDriving License\nOthers",
    "read_only": 0,
    "reqd": 1,
    "show_in_filter": 0

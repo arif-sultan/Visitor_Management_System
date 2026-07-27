@@ -5,13 +5,13 @@
  * Exposed as `window.VMS_IDValidators` so any Frappe web form / desk form /
  * custom page script can call it. Pure JS — no jQuery, no Frappe deps.
  *
- * Canonical labels: "Aadhaar", "PAN Card", "Driving License", "Passport".
+ * Canonical labels: "CNIC", "Student Card", "Driving License", "Passport".
  * Aliases ("PAN", "DL") are accepted by validateID / idProofErrorMessage.
  */
 (function (global) {
 	"use strict";
 
-	// ── Verhoeff tables (for Aadhaar) ───────────────────────────
+	// ── Verhoeff tables (for CNIC) ───────────────────────────
 	const D = [
 		[0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
 		[1, 2, 3, 4, 0, 6, 7, 8, 9, 5],
@@ -82,19 +82,21 @@
 
 	// ── Type dispatch ──────────────────────────────────────────
 	const CANONICAL = {
-		aadhaar: "Aadhaar",
-		aadhar: "Aadhaar",
-		uid: "Aadhaar",
-		pan: "PAN Card",
-		"pan card": "PAN Card",
+		cnic: "CNIC",
+		aadhaar: "CNIC",
+		aadhar: "CNIC",
+		uid: "CNIC",
+		pan: "Student Card",
+		"pan card": "Student Card",
+		"student card": "Student Card",
 		dl: "Driving License",
 		"driving license": "Driving License",
 		"driving licence": "Driving License",
 		passport: "Passport",
 	};
 	const VALIDATORS = {
-		"Aadhaar": validateAadhaar,
-		"PAN Card": validatePAN,
+		"CNIC": validateAadhaar,
+		"Student Card": validatePAN,
 		"Driving License": validateDrivingLicense,
 		"Passport": validatePassport,
 	};
@@ -115,7 +117,7 @@
 	}
 
 	function detectIDType(number) {
-		const order = ["Aadhaar", "PAN Card", "Driving License", "Passport"];
+		const order = ["CNIC", "Student Card", "Driving License", "Passport"];
 		for (let i = 0; i < order.length; i++) {
 			if (VALIDATORS[order[i]](number)) return order[i];
 		}
@@ -123,11 +125,11 @@
 	}
 
 	const ERROR_MESSAGES = {
-		"Aadhaar":
-			"Aadhaar must be exactly 12 digits, must not start with 0 or 1, " +
+		"CNIC":
+			"CNIC must be exactly 12 digits, must not start with 0 or 1, " +
 			"and must pass the UIDAI Verhoeff checksum.",
-		"PAN Card":
-			"PAN must be in the format ABCDE1234F " +
+		"Student Card":
+			"Student Card must be in the format ABCDE1234F " +
 			"(5 uppercase letters, 4 digits, 1 uppercase letter).",
 		"Driving License":
 			"Driving License must be in the format SS00 00000000000 " +
@@ -147,7 +149,7 @@
 		return (
 			"Unsupported ID Proof Type: " +
 			JSON.stringify(idType) +
-			". Use Aadhaar, PAN Card, Driving License, or Passport."
+			". Use CNIC, Student Card, Driving License, or Passport."
 		);
 	}
 

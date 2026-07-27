@@ -92,13 +92,13 @@ class TestVisitorBlacklist(FrappeTestCase):
 			"doctype": "Visitor Blacklist",
 			"reason": "Name-only blacklist",
 			"visitor_name": "Test Blacklist Name Only",
-			"id_proof_type": "Aadhaar",
+			"id_proof_type": "CNIC",
 			"is_active": 1,
 		}).insert(ignore_permissions=True)
 		match = VisitorBlacklist.find_active_match(
 			id_proof_number=None,
 			visitor_name="Test Blacklist Name Only",
-			id_proof_type="Aadhaar",
+			id_proof_type="CNIC",
 		)
 		self.assertIsNotNone(match)
 

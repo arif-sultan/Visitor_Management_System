@@ -84,7 +84,7 @@ def _make_pass(visitor_type: str, visitor_full_name: str, id_number: str,
         "visitor_full_name": visitor_full_name,
         "mobile_number": "+91 9876543210",
         "email_id": f"reg-{id_number.lower()}@example.com",
-        "id_proof_type": "PAN Card",
+        "id_proof_type": "Student Card",
         "id_proof_number": id_number,
         "id_proof_scan": _file(f"id_{id_number}"),
         "visitor_photo": _file(f"photo_{id_number}"),
@@ -223,7 +223,7 @@ class TestVisitorPassValidation(FrappeTestCase):
             "visitor_full_name": "Reg Test",
             "mobile_number": "+91 9876543210",
             "email_id": "reg-test@example.com",
-            "id_proof_type": "PAN Card",
+            "id_proof_type": "Student Card",
             "id_proof_number": "ABCDE1234F",
             "id_proof_scan": _file("v_id"),
             "visitor_photo": _file("v_photo"),
@@ -250,11 +250,11 @@ class TestVisitorPassValidation(FrappeTestCase):
             doc.flags.ignore_mandatory = True
             doc.insert()
 
-    def test_aadhaar_format_rejected(self):
-        # Aadhaar must be exactly 12 digits — any non-12-digit input is rejected.
+    def test_cnic_format_rejected(self):
+        # CNIC must be exactly 12 digits — any non-12-digit input is rejected.
         # (Whether the live system enforces the Verhoeff checksum varies; this
         # test exercises the format check that is always present.)
-        payload = self._build_payload(id_proof_type="Aadhaar", id_proof_number="abc-not-12-digits")
+        payload = self._build_payload(id_proof_type="CNIC", id_proof_number="abc-not-12-digits")
         with self.assertRaises(frappe.ValidationError):
             doc = frappe.get_doc(payload)
             doc.flags.ignore_mandatory = True

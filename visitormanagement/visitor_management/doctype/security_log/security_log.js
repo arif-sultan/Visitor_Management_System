@@ -661,7 +661,7 @@ function is_security_admin() {
 function mask_id_proof_number(frm) {
 	const val = frm.doc.id_proof_number;
 	// "X" guard prevents double-masking on form refresh. Don't gate on spaces —
-	// real DL ("TN05 20210001234") and spaced Aadhaar ("2345 6789 0124") have
+	// real DL ("TN05 20210001234") and spaced CNIC ("2345 6789 0124") have
 	// real spaces that would otherwise leave the full number visible.
 	if (!val || val.includes("X")) return;
 	frm.set_value("id_proof_number", build_masked_id(val));

@@ -246,7 +246,7 @@
    "fieldname": "id_proof_type",
    "fieldtype": "Select",
    "label": "ID Proof Type",
-   "options": "Aadhaar\nPAN Card\nPassport\nDriving License\nEmirates ID",
+   "options": "CNIC\nStudent Card\nPassport\nDriving License\nOthers",
    "reqd": 1
   },
   {

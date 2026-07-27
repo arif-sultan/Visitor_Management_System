@@ -15,8 +15,8 @@ from visitormanagement.visitor_management.lifecycle import (
 def mask_id_number(raw):
     """Mask ID proof number, preserving separators and showing only last 4 characters.
 
-    Aadhaar  5001-5002-5003  →  XXXX-XXXX-5003
-    PAN      AABPR2345T     →  XXXXXX345T
+    CNIC          5001-5002-5003  →  XXXX-XXXX-5003
+    Student Card  AABPR2345T     →  XXXXXX345T
     Passport P1234567       →  XXXX4567
     DL       DL-TN-05210099 →  XX-XX-XXXX0099
     """

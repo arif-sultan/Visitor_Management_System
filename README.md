@@ -181,7 +181,7 @@ This can be overridden manually on each Security Log or globally via **VMS Setti
 | Field | What to put |
 |---|---|
 | **Visitor Name** | Person's name (used as fallback when ID number is unknown) |
-| **ID Proof Type** | Aadhaar / PAN Card / Passport / Driving License |
+| **ID Proof Type** | CNIC / Student Card / Passport / Driving License |
 | **ID Proof Number** | Primary lookup key (auto-named series `VB-YYYY-#####`) |
 | **Reason** | Mandatory — why this person is blocked (audit/compliance requirement) |
 | **Is Active** | ✅ to enforce the block. Uncheck to suspend the block without deleting the record. |

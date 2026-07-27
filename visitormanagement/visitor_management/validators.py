@@ -8,7 +8,7 @@ imports `frappe`.
 
 Canonical ID type labels mirror the Select options on Visitor Pass and the
 Visitor Pre-Registration web form:
-    "Aadhaar", "PAN Card", "Passport", "Driving License"
+    "CNIC", "Student Card", "Passport", "Driving License"
 
 Short aliases ("PAN", "DL") are accepted by `validate_id` / `id_proof_error_message`.
 """
@@ -16,7 +16,7 @@ Short aliases ("PAN", "DL") are accepted by `validate_id` / `id_proof_error_mess
 import re
 
 # ─────────────────────────────────────────────────────────────
-# VERHOEFF CHECKSUM TABLES (for Aadhaar)
+# VERHOEFF CHECKSUM TABLES (for CNIC)
 # ─────────────────────────────────────────────────────────────
 
 VERHOEFF_D = (
@@ -74,7 +74,7 @@ def _strip_hyphens(number):
 
 
 def validate_aadhaar(number):
-    """12 digits, first digit ∈ 2..9, passes Verhoeff."""
+    """CNIC: 12 digits, first digit ∈ 2..9, passes Verhoeff."""
     clean = _strip_hyphens(str(number or ""))
     if not _AADHAAR_RE.match(clean):
         return False
@@ -110,24 +110,27 @@ def validate_emirates_id(number):
 # ─────────────────────────────────────────────────────────────
 
 _CANONICAL = {
-    "aadhaar": "Aadhaar",
-    "aadhar": "Aadhaar",
-    "uid": "Aadhaar",
-    "pan": "PAN Card",
-    "pan card": "PAN Card",
+    "cnic": "CNIC",
+    "aadhaar": "CNIC",
+    "aadhar": "CNIC",
+    "uid": "CNIC",
+    "pan": "Student Card",
+    "pan card": "Student Card",
+    "student card": "Student Card",
     "dl": "Driving License",
     "driving license": "Driving License",
     "driving licence": "Driving License",
     "passport": "Passport",
-    "emirates id": "Emirates ID",
+    "emirates id": "Others",
+    "others": "Others",
 }
 
 _VALIDATORS = {
-    "Aadhaar": validate_aadhaar,
-    "PAN Card": validate_pan,
+    "CNIC": validate_aadhaar,
+    "Student Card": validate_pan,
     "Driving License": validate_driving_license,
     "Passport": validate_passport,
-    "Emirates ID": validate_emirates_id,
+    "Others": validate_emirates_id,
 }
 
 
@@ -146,14 +149,14 @@ def validate_id(id_type, number):
 
 def detect_id_type(number):
     """Return the first canonical label whose validator accepts `number`, else None.
-    Order: Aadhaar → PAN → Driving License → Passport → Emirates ID.
+    Order: CNIC → Student Card → Driving License → Passport → Others.
     """
     for label in (
-    "Aadhaar",
-    "PAN Card",
+    "CNIC",
+    "Student Card",
     "Driving License",
     "Passport",
-    "Emirates ID",
+    "Others",
 ):
         if _VALIDATORS[label](number):
             return label
@@ -165,12 +168,12 @@ def detect_id_type(number):
 # ─────────────────────────────────────────────────────────────
 
 _ERROR_MESSAGES = {
-    "Aadhaar": (
-        "Aadhaar must be exactly 12 digits, must not start with 0 or 1, "
+    "CNIC": (
+        "CNIC must be exactly 12 digits, must not start with 0 or 1, "
         "and must pass the UIDAI Verhoeff checksum."
     ),
-    "PAN Card": (
-        "PAN must be in the format ABCDE1234F "
+    "Student Card": (
+        "Student Card must be in the format ABCDE1234F "
         "(5 uppercase letters, 4 digits, 1 uppercase letter)."
     ),
     "Driving License": (
@@ -181,8 +184,8 @@ _ERROR_MESSAGES = {
         "Passport must be in the format A1234567 "
         "(1 uppercase letter followed by 7 digits)."
     ),
-    "Emirates ID": (
-    "Emirates ID must be in the format 784-XXXX-XXXXXXX-X."
+    "Others": (
+    "Others must be in the format 784-XXXX-XXXXXXX-X."
     ),
 }
 
@@ -192,7 +195,7 @@ def id_proof_error_message(id_type):
     return _ERROR_MESSAGES.get(
         canonical,
         f"Unsupported ID Proof Type: {id_type!r}. "
-        "Use Aadhaar, PAN Card, Driving License, Passport, or Emirates ID.")
+        "Use CNIC, Student Card, Driving License, Passport, or Others.")
 
 
 # ─────────────────────────────────────────────────────────────
