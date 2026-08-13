@@ -386,7 +386,8 @@ def submit_pre_registration(payload=None):
 	if require_full_submission:
 		canonical_type = _normalize_id_proof_type(data.get("id_proof_type"))
 		id_number = (data.get("id_proof_number") or "").strip()
-		if canonical_type and id_number and not validate_id(canonical_type, id_number):
+		# CNIC is intentionally unvalidated — reception may enter any value.
+		if canonical_type and canonical_type != "CNIC" and id_number and not validate_id(canonical_type, id_number):
 			frappe.throw(
 				id_proof_error_message(canonical_type),
 				title="Invalid ID Proof",

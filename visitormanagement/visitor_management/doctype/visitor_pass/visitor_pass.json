@@ -258,14 +258,12 @@
   {
    "fieldname": "id_proof_scan",
    "fieldtype": "Attach Image",
-   "label": "ID Proof Scan",
-   "reqd": 1
+   "label": "ID Proof Scan"
   },
   {
    "fieldname": "visitor_photo",
    "fieldtype": "Attach Image",
-   "label": "Visitor Photo",
-   "reqd": 1
+   "label": "Visitor Photo"
   },
   {
    "fieldname": "visit_plan_tab",
@@ -287,8 +285,7 @@
    "fieldname": "person_to_visit",
    "fieldtype": "Link",
    "label": "Person to Visit",
-   "options": "Employee",
-   "reqd": 1
+   "options": "Employee"
   },
   {
    "fetch_from": "person_to_visit.department",

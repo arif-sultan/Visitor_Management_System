@@ -250,15 +250,12 @@ class TestVisitorPassValidation(FrappeTestCase):
             doc.flags.ignore_mandatory = True
             doc.insert()
 
-    def test_cnic_format_rejected(self):
-        # CNIC must be exactly 12 digits — any non-12-digit input is rejected.
-        # (Whether the live system enforces the Verhoeff checksum varies; this
-        # test exercises the format check that is always present.)
+    def test_cnic_format_not_validated(self):
+        # CNIC is intentionally unvalidated — any value is accepted as-is.
         payload = self._build_payload(id_proof_type="CNIC", id_proof_number="abc-not-12-digits")
-        with self.assertRaises(frappe.ValidationError):
-            doc = frappe.get_doc(payload)
-            doc.flags.ignore_mandatory = True
-            doc.insert()
+        doc = frappe.get_doc(payload)
+        doc.flags.ignore_mandatory = True
+        doc.insert()
 
     def test_invalid_pan_format_rejected(self):
         payload = self._build_payload(id_proof_number="NOT-A-VALID-PAN")

@@ -99,7 +99,8 @@ class VisitorPass(Document):
                     title=_("Invalid Email"),
                 )
 
-        if self.id_proof_type and self.id_proof_number:
+        # CNIC is intentionally unvalidated — reception may enter any value.
+        if self.id_proof_type and self.id_proof_type != "CNIC" and self.id_proof_number:
             if not validate_id(self.id_proof_type, self.id_proof_number):
                 frappe.throw(
                     _(id_proof_error_message(self.id_proof_type)),
@@ -365,18 +366,6 @@ class VisitorPass(Document):
     # BEFORE SUBMIT
     # ─────────────────────────────────────────────────────────
     def before_submit(self):
-        # 0️⃣ REQUIRED DOCUMENTS
-        if not self.visitor_photo:
-            frappe.throw(
-                _("Visitor Photo is required before submitting the pass."),
-                title=_("Missing Visitor Photo"),
-            )
-        if not self.id_proof_scan:
-            frappe.throw(
-                _("ID Proof Scan is required before submitting the pass."),
-                title=_("Missing ID Proof Scan"),
-            )
-
         # 0️⃣.5 OPTIONAL ITEM DECLARATION (enforced via VMS Settings)
         settings = frappe.get_cached_doc("VMS Settings")
         if settings.get("require_item_declaration") and not self.visitor_items:
